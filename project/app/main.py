@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session,sessionmaker
 
 from app import config
+from app import box_jwt
 
 from db.database import create_db_engine
 from db import models, schemas, crud
@@ -31,16 +32,42 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/info")
-async def info(settings: config.Settings = Depends(get_settings)):
-    """Get the info for the app."""
-    return {
-        "app_name": settings.app_name,
-        "SQLALCHEMY_DATABASE_URL": settings.SQLALCHEMY_DATABASE_URL,
-    }
+@app.get("/")
+async def info():
+    """
+    Get the info for the app.
+    Returns the settings for the app.
+    (remember not to expose secrets like the FERNET_KEY)
+    """
+    configurations = config.Settings().dict()
+    configurations.pop("FERNET_KEY")
+    return configurations
 
-@app.get("/jwts/", response_model=list[schemas.Jwt])
-def list_jwts(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """list all jwts in current database"""
+@app.get("/info/jwt/", response_model=list[schemas.Jwt])
+def info_jwt(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """list all jwt accounts in current database"""
     jwts = crud.list_jwts(db, skip=skip, limit=limit)
     return jwts
+
+@app.get("/info/me")
+async def info_me(settings:config.Settings = Depends(get_settings), db: Session = Depends(get_db)):
+    """
+    Returns current user info
+    """
+    client = box_jwt.jwt_check_client(db,settings)
+    me = client.user()
+    me = me.get()
+    # print(me.name)
+    return {"name": me.name, "email": me.login, "id": me.id}
+
+
+@app.get("/classify")
+async def classify(settings:config.Settings = Depends(get_settings), db: Session = Depends(get_db)):
+    """
+    Classify endpoint
+    """
+    client = box_jwt.jwt_check_client(db,settings)
+    me = client.user()
+    me = me.get()
+    # print(me.name)
+    return {"user":{"name": me.name, "email": me.login, "id": me.id}}

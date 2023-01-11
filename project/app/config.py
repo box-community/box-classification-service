@@ -6,7 +6,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     """Configuration settings class for the app."""
 
-    app_name: str = "Awesome API"
+    app_name: str = "Box Classification Service"
     SQLALCHEMY_DATABASE_URL: str = "sqlite:///./db.sqlite3"
     FERNET_KEY: str
     jwt_path: str = "./.jwt.config.json"
