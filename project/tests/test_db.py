@@ -42,7 +42,7 @@ def test_create_jwt():
         app_user_id=app_user_id,
     )
 
-    db_jwt = crud.save_jwt(db, jwt, settings)
+    db_jwt = crud.save_jwt(db, jwt, settings.FERNET_KEY)
 
     assert db_jwt.box_app_id == jwt.box_app_id
     assert db_jwt.expires_on == jwt.expires_on
@@ -51,4 +51,5 @@ def test_create_jwt():
     assert db_jwt.access_token is not None
     assert db_jwt.access_token != jwt.access_token_clear
     # assert db_jwt.access_token == encrypt_token(jwt.access_token_clear, settings)
-    assert decrypt_token(db_jwt.access_token, settings) == jwt.access_token_clear
+    assert decrypt_token(db_jwt.access_token, settings.FERNET_KEY) == jwt.access_token_clear
+    

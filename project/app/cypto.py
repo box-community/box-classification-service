@@ -1,19 +1,19 @@
 """Crypto functions."""
 from cryptography.fernet import Fernet
-from app.config import Settings
 
-def encrypt_token(token:str, settings:Settings) -> str:
+def encrypt_token(token:str, fernet_key: str) -> str:
     """Encrypt token."""
-    key = settings.FERNET_KEY
+    key = fernet_key
     encoded_token = token.encode()
-    f = Fernet(key)
-    encrypted = f.encrypt(encoded_token)
+    fernet = Fernet(key)
+    encrypted = fernet.encrypt(encoded_token)
     return encrypted.decode()
 
-def decrypt_token(token:str, settings:Settings) -> str:
+def decrypt_token(token:str, fernet_key: str) -> str:
     """Decrypt token."""
-    key = settings.FERNET_KEY
+    key = fernet_key
     encoded_token = token.encode()
-    f = Fernet(key)
-    dencrypted = f.decrypt(encoded_token)
+    fernet = Fernet(key)
+    dencrypted = fernet.decrypt(encoded_token)
     return dencrypted.decode()
+    

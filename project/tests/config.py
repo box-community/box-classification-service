@@ -12,4 +12,6 @@ def get_settings_override():
         SQLALCHEMY_DATABASE_URL="sqlite:///./test.db.sqlite3",
         FERNET_KEY = fernet_key,
         jwt_path = "./.jwt.config.json",
+        JWT_PUBLIC_KEY_ID = 'nztcgflw',
+        JWT_EXPIRATION_SECONDS = 3300,
     )

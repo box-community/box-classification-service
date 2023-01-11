@@ -1,25 +1,28 @@
+"""handle the JWT tokens for Box API"""
 from datetime import datetime, timedelta
 from boxsdk import Client, JWTAuth
 from sqlalchemy.orm import Session
 
-from app.cypto import decrypt_token, encrypt_token
 from app.config import Settings
 from db import models, crud, schemas
 
-def jwt_access_token_get(db:Session, settings:Settings) -> str:
+
+def jwt_access_token_get(db: Session, settings: Settings) -> str:
     """
     Get the access token for the JWT assertion
     """
     # check if we have a valid access token
-    # jwt_rec = Jwt.query.filter_by(box_app_id=Config.JWT_PUBLIC_KEY_ID).first()
-    jwt_rec = crud.get_jwt(db,"nztcgflw", settings)
-        
+    jwt_rec = crud.get_jwt(db, settings.JWT_PUBLIC_KEY_ID, settings.FERNET_KEY)
+
     if jwt_rec_is_valid(jwt_rec):
-        return decrypt_token(jwt_rec.access_token, settings)
+        return jwt_rec.access_token
 
     # get a new access token
-    auth = JWTAuth.from_settings_file(settings.jwt_path, store_tokens=jwt_store_token)
-    return auth.authenticate_instance()
+    auth = JWTAuth.from_settings_file(settings.jwt_path)
+    auth_token = auth.authenticate_instance()
+    jwt_store_token(db, settings, auth_token, None)
+
+    return auth_token
 
 
 def jwt_rec_is_valid(jwt_rec: models.Jwt) -> bool:
@@ -34,63 +37,33 @@ def jwt_rec_is_valid(jwt_rec: models.Jwt) -> bool:
 
     return True
 
-def jwt_store_token(access_token: str, refresh_token: str = None) -> bool:
-    return True
 
-# def jwt_store_token(access_token: str, refresh_token: str = None) -> bool:
-#     """
-#     Store the access tokens for the jwt app user
-#     """
-#     print(f"Storing access token: {access_token}")
-#     jwt_rec = Jwt.query.filter_by(box_app_id=Config.JWT_PUBLIC_KEY_ID).first()
-#     seconds = int(Config.JWT_EXPIRATION_SECONDS)
+def jwt_store_token(
+    db: Session, settings: Settings, access_token: str, refresh_token: str = None
+) -> bool:
+    """
+    Store the access tokens for the jwt app user
+    """
+    seconds = int(settings.JWT_EXPIRATION_SECONDS)
 
-#     if jwt_rec == None:
+    jwt_rec = schemas.JwtCreate(
+        box_app_id=settings.JWT_PUBLIC_KEY_ID,
+        access_token_clear=access_token,
+        expires_on=datetime.now() + timedelta(seconds=seconds),
+        app_user_id=0,
+    )
 
-#         jwt_new = Jwt(
-#             box_app_id=Config.JWT_PUBLIC_KEY_ID,
-#             access_token=encrypt_token(access_token),
-#             expires_on=datetime.now() + timedelta(seconds=seconds),
-#             app_user_id=0,
-#             box_demo_folder_id=0,
-#         )
-#         db.session.add(jwt_new)
-#         db.session.commit()
-#     else:
-#         jwt_rec.box_app_id = Config.JWT_PUBLIC_KEY_ID
-#         jwt_rec.access_token = encrypt_token(access_token)
-#         jwt_rec.expires_on = datetime.now() + timedelta(seconds=seconds)
-#         db.session.commit()
+    crud.save_jwt(db, jwt_rec, settings.FERNET_KEY)
 
 
-# @fl_cache.cached(key_prefix="jwt_downscoped_access_token_get")
-# def jwt_downscoped_access_token_get() -> str:
-#     """
-#     Get the downscoped access token for the jwt app user
-#     """
-
-#     scope = [
-#         "base_explorer",
-#         "item_preview",  #'item_download', 'item_rename', 'item_share', 'item_delete',
-#         "base_picker",  #'item_upload', # , 'item_share'
-#         #'base_preview', 'annotation_edit', 'annotation_view_all', 'annotation_view_self', #, 'item_download'
-#         #'base_sidebar', 'item_comment', #'item_task', # , 'item_rename', 'item_upload'
-#         "base_upload",
-#     ]
-#     client = jwt_check_client()
-#     downscoped_token = client.downscope_token(scopes=scope)
-#     return downscoped_token.access_token
-
-
-def jwt_auth(db:Session, settings: Settings) -> JWTAuth:
+def jwt_auth(db: Session, settings: Settings) -> JWTAuth:
     """
     Get the auth for the JWT app user
     """
     access_token = jwt_access_token_get(db, settings)
 
     auth = JWTAuth.from_settings_file(
-        settings.jwt_path, store_tokens = jwt_store_token,
-        access_token=access_token
+        settings.jwt_path, store_tokens=jwt_store_token, access_token=access_token
     )
 
     return auth
@@ -105,8 +78,8 @@ def jwt_client(auth: JWTAuth) -> Client:
     return client
 
 
-def jwt_check_client(settings: Settings) -> Client:
-
-    auth = jwt_auth(settings)
+def jwt_check_client(db: Session, settings: Settings) -> Client:
+    """ Get a Client object for the JWT app user"""
+    auth = jwt_auth(db, settings)
     client = jwt_client(auth)
     return client
