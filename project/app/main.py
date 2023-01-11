@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session,sessionmaker
 
 from app import config
@@ -32,24 +32,27 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/")
-async def info():
+@app.get("/box/info")
+async def info(request: Request):
     """
     Get the info for the app.
     Returns the settings for the app.
     (remember not to expose secrets like the FERNET_KEY)
     """
     configurations = config.Settings().dict()
-    configurations.pop("FERNET_KEY")
+    configurations["FERNET_KEY"] = "****"
+    configurations["root_path"] = request.scope.get("root_path")
     return configurations
 
-@app.get("/info/jwt/", response_model=list[schemas.Jwt])
+@app.get("/box/info/jwt", response_model=list[schemas.Jwt])
 def info_jwt(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """list all jwt accounts in current database"""
     jwts = crud.list_jwts(db, skip=skip, limit=limit)
+    for jwt in jwts:
+        jwt.access_token = "****"
     return jwts
 
-@app.get("/info/me")
+@app.get("/box/info/me")
 async def info_me(settings:config.Settings = Depends(get_settings), db: Session = Depends(get_db)):
     """
     Returns current user info
@@ -61,7 +64,7 @@ async def info_me(settings:config.Settings = Depends(get_settings), db: Session 
     return {"name": me.name, "email": me.login, "id": me.id}
 
 
-@app.get("/classify")
+@app.get("/box/classify")
 async def classify(settings:config.Settings = Depends(get_settings), db: Session = Depends(get_db)):
     """
     Classify endpoint

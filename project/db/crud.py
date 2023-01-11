@@ -1,5 +1,6 @@
 """CRUD operations for the database"""
 from sqlalchemy.orm import Session
+from cryptography.fernet import InvalidToken
 
 from app.cypto import encrypt_token, decrypt_token
 from . import models,schemas
@@ -10,7 +11,10 @@ def get_jwt(db: Session, box_app_id: str, fernet_key: str):
     db_jwt = db.query(models.Jwt).filter(models.Jwt.box_app_id == box_app_id).first()
     if db_jwt is not None:
         if db_jwt.access_token is not None:
-            db_jwt.access_token = decrypt_token(db_jwt.access_token, fernet_key)
+            try:
+                db_jwt.access_token = decrypt_token(db_jwt.access_token, fernet_key)
+            except InvalidToken:
+                db_jwt.access_token = "Invalid Token"
     return db_jwt
 
 def save_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str):

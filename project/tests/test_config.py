@@ -7,7 +7,7 @@ def test_config_read():
     """should return NON overridden settings"""
     settings = get_settings()
 
-    assert settings.app_name == "Awesome API"
+    assert settings.app_name == "Box Classification Service"
     assert settings.SQLALCHEMY_DATABASE_URL == "sqlite:///./db.sqlite3"
     assert settings.FERNET_KEY is not None
     assert settings.jwt_path == "./.jwt.config.json"

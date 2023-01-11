@@ -1,5 +1,5 @@
 """Crypto functions."""
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 def encrypt_token(token:str, fernet_key: str) -> str:
     """Encrypt token."""
