@@ -1,16 +1,17 @@
 """ handle box webhooks from box exvents"""
+from sqlalchemy.orm import Session
 from app.config import Settings
 from app.box_jwt import jwt_check_client
 
 def webhook_signature_check(
-    webhook_id,
     body: bytes,
     header: dict,
+    db: Session,
     settings: Settings,
 ) -> bool:
     """check the signature of the webhook request"""
-    client = jwt_check_client()
-    webhook = client.webhook(webhook_id)
+    client = jwt_check_client(db, settings)
+    webhook = client.webhook(None)
 
     key_a = settings.WH_KEY_A
     key_b = settings.WH_KEY_B
@@ -79,7 +80,7 @@ def webhook_signature_check(
 #     booking_divers_waiver = Booking_Diver.query.filter_by(
 #         waiver_file_id=file_id
 #     ).first()
-    
+
 #     resolution_state = webhook_trigger.split('.')[1]
 
 #     if booking_divers_waiver is not None:

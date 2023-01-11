@@ -16,4 +16,5 @@ def get_settings_override():
         JWT_EXPIRATION_SECONDS = 3300,
         WH_KEY_A = 'test_key_a',
         WH_KEY_B = 'test_key_b',
+        WH_ID = 'test_wh_id',
     )

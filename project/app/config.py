@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_SECONDS: int = 3300
     WH_KEY_A: str
     WH_KEY_B: str
+    WH_ID: str
 
     class Config:
         """environment variables to read from"""

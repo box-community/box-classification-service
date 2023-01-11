@@ -3,18 +3,21 @@
 from functools import lru_cache
 
 from fastapi import Depends, FastAPI, Request
-from sqlalchemy.orm import Session,sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from app import config
 from app import box_jwt
+from app import box_webhooks
 
 from db.database import create_db_engine
 from db import models, schemas, crud
+
 
 @lru_cache()
 def get_settings():
     """Get the settings for the app."""
     return config.Settings()
+
 
 engine = create_db_engine(get_settings())
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -32,6 +35,7 @@ def get_db():
     finally:
         db.close()
 
+
 @app.get("/box/info")
 async def info(request: Request):
     """
@@ -44,6 +48,7 @@ async def info(request: Request):
     configurations["root_path"] = request.scope.get("root_path")
     return configurations
 
+
 @app.get("/box/info/jwt", response_model=list[schemas.Jwt])
 def info_jwt(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """list all jwt accounts in current database"""
@@ -52,25 +57,48 @@ def info_jwt(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
         jwt.access_token = "****"
     return jwts
 
+
 @app.get("/box/info/me")
-async def info_me(settings:config.Settings = Depends(get_settings), db: Session = Depends(get_db)):
+async def info_me(
+    settings: config.Settings = Depends(get_settings), db: Session = Depends(get_db)
+):
     """
     Returns current user info
     """
-    client = box_jwt.jwt_check_client(db,settings)
+    client = box_jwt.jwt_check_client(db, settings)
     me = client.user()
     me = me.get()
     # print(me.name)
     return {"name": me.name, "email": me.login, "id": me.id}
 
 
-@app.get("/box/classify")
-async def classify(settings:config.Settings = Depends(get_settings), db: Session = Depends(get_db)):
+@app.post("/box/classify")
+async def classify(
+    request: Request,
+    settings: config.Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
     """
     Classify endpoint
     """
-    client = box_jwt.jwt_check_client(db,settings)
-    me = client.user()
-    me = me.get()
-    # print(me.name)
-    return {"user":{"name": me.name, "email": me.login, "id": me.id}}
+    body_json = await request.json()
+
+    # check if the webhook id is the expected one
+    # created on the console
+    webhook_id = body_json["webhook"]["id"]
+
+    if webhook_id != settings.WH_ID:
+        raise Exception("invalid webhook id")
+
+    # should also check for replay attacks
+    # TBD
+
+    body = await request.body()
+
+    # check for valid signatures
+    is_valid = box_webhooks.webhook_signature_check(body, request.headers, db, settings)
+
+    if not is_valid:
+        raise Exception("invalid signature")
+
+    return {"ok": True}
