@@ -14,4 +14,6 @@ def get_settings_override():
         jwt_path = "./.jwt.config.json",
         JWT_PUBLIC_KEY_ID = 'nztcgflw',
         JWT_EXPIRATION_SECONDS = 3300,
+        WH_KEY_A = 'test_key_a',
+        WH_KEY_B = 'test_key_b',
     )
