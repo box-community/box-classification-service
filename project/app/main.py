@@ -2,8 +2,9 @@
 
 from functools import lru_cache
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, HTTPException
 from sqlalchemy.orm import Session, sessionmaker
+from boxsdk import BoxAPIException
 
 from app import config
 from app import box_jwt
@@ -88,7 +89,7 @@ async def classify(
     webhook_id = body_json["webhook"]["id"]
 
     if webhook_id != settings.WH_ID:
-        raise Exception("invalid webhook id")
+        raise HTTPException(status_code=404, detail="Unexpected webhook id")
 
     # should also check for replay attacks
     # TBD
@@ -96,9 +97,14 @@ async def classify(
     body = await request.body()
 
     # check for valid signatures
-    is_valid = box_webhooks.webhook_signature_check(body, request.headers, db, settings)
+    try:
+        is_valid = box_webhooks.webhook_signature_check(
+            webhook_id, body, request.headers, db, settings
+        )
+    except BoxAPIException as exc:
+        raise HTTPException(status_code=404, detail="Webhook not found") from exc
 
     if not is_valid:
-        raise Exception("invalid signature")
+        raise HTTPException(status_code=404, detail="Invalid signature")
 
     return {"ok": True}
