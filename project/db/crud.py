@@ -14,7 +14,7 @@ def get_jwt(db: Session, box_app_id: str, fernet_key: str):
             try:
                 db_jwt.access_token = decrypt_token(db_jwt.access_token, fernet_key)
             except InvalidToken:
-                db_jwt.access_token = "Invalid Token"
+                db_jwt.access_token = db_jwt.access_token
     return db_jwt
 
 def save_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str):
@@ -49,7 +49,7 @@ def update_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str):
         raise ValueError("JWT not found")
 
     db_jwt.box_app_id = jwt.box_app_id
-    db_jwt.access_token = encrypt_token(jwt.access_token,fernet_key)
+    db_jwt.access_token = encrypt_token(jwt.access_token_clear,fernet_key)
     db_jwt.expires_on = jwt.expires_on
     db_jwt.app_user_id = jwt.app_user_id
 

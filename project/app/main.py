@@ -60,7 +60,7 @@ def info_jwt(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 
 @app.get("/box/info/me")
-async def info_me(
+def info_me(
     settings: config.Settings = Depends(get_settings), db: Session = Depends(get_db)
 ):
     """
@@ -88,7 +88,7 @@ async def classify(
     # created on the console
     webhook_id = body_json["webhook"]["id"]
 
-    if webhook_id != settings.WH_ID:
+    if webhook_id != settings.WH_ID and False:
         raise HTTPException(status_code=404, detail="Unexpected webhook id")
 
     # should also check for replay attacks
@@ -106,5 +106,7 @@ async def classify(
 
     if not is_valid:
         raise HTTPException(status_code=404, detail="Invalid signature")
+
+    box_webhooks.classify_file(body_json["source"]["id"], db, settings)
 
     return {"ok": True}

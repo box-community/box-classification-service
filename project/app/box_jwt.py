@@ -63,7 +63,7 @@ def jwt_auth(db: Session, settings: Settings) -> JWTAuth:
     access_token = jwt_access_token_get(db, settings)
 
     auth = JWTAuth.from_settings_file(
-        settings.jwt_path, store_tokens=jwt_store_token, access_token=access_token
+        settings.jwt_path, access_token=access_token
     )
 
     return auth
