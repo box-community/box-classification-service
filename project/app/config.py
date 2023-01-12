@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     WH_KEY_A: str
     WH_KEY_B: str
     WH_ID: str
+    CLASSIFICATION: str
 
     class Config:
         """environment variables to read from"""
