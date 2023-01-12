@@ -1,7 +1,7 @@
 """ Test JWT boxsdk auth"""
 
 from sqlalchemy.orm import sessionmaker
-from app.box_jwt import jwt_auth, jwt_client
+from app.box_jwt import jwt_auth, jwt_client, jwt_check_client
 
 from tests.config import get_settings_override
 
@@ -31,9 +31,17 @@ def test_jwt_client():
     """should return a valid client (Client object)"""
     db = SessionLocal()
     auth = jwt_auth(db, settings)
+
     client = jwt_client(auth)
+    assert client is not None
 
     service_account = client.user().get()
-
-    assert client is not None
     assert service_account is not None
+
+    # should be able to reuse the auth token
+    client = jwt_check_client(db, settings)
+    assert client is not None
+
+    service_account = client.user().get()
+    assert service_account is not None
+    

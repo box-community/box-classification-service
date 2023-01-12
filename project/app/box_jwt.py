@@ -15,7 +15,7 @@ def jwt_access_token_get(db: Session, settings: Settings) -> str:
     jwt_rec = crud.get_jwt(db, settings.JWT_PUBLIC_KEY_ID, settings.FERNET_KEY)
 
     if jwt_rec_is_valid(jwt_rec):
-        return jwt_rec.access_token
+        return jwt_rec.access_token_clear
 
     # get a new access token
     auth = JWTAuth.from_settings_file(settings.jwt_path)

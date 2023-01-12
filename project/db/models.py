@@ -7,6 +7,6 @@ class Jwt(Base):
     __tablename__ = 'jwt'
 
     box_app_id = Column(String(128), primary_key=True)
-    access_token = Column(String(2048), nullable=False)
+    access_token_encrypted = Column(String(2048), nullable=False)
     expires_on = Column(DateTime, nullable=False)
     app_user_id = Column(String(64),unique=True)

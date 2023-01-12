@@ -46,16 +46,17 @@ async def info(request: Request):
     """
     configurations = config.Settings().dict()
     configurations["FERNET_KEY"] = "****"
-    configurations["root_path"] = request.scope.get("root_path")
+    configurations["WH_KEY_A"] = "****"
+    configurations["WH_KEY_B"] = "****"
+    # configurations["root_path"] = request.scope.get("root_path")
     return configurations
 
 
 @app.get("/box/info/jwt", response_model=list[schemas.Jwt])
-def info_jwt(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def info_jwt(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), settings: config.Settings = Depends(get_settings)):
     """list all jwt accounts in current database"""
-    jwts = crud.list_jwts(db, skip=skip, limit=limit)
-    for jwt in jwts:
-        jwt.access_token = "****"
+
+    jwts = crud.list_jwts(db, settings.FERNET_KEY,skip=skip, limit=limit)
     return jwts
 
 
