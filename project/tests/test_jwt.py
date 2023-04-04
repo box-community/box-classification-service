@@ -1,7 +1,10 @@
 """ Test JWT boxsdk auth"""
 
+from datetime import timedelta
 from sqlalchemy.orm import sessionmaker
 from app.box_jwt import jwt_auth, jwt_client, jwt_check_client
+from db import crud
+from db.crud import get_jwt
 
 from tests.config import get_settings_override
 
@@ -44,4 +47,27 @@ def test_jwt_client():
 
     service_account = client.user().get()
     assert service_account is not None
-    
+
+
+def test_jwt_client_expired():
+    """should return a valid client (Client object)"""
+    db = SessionLocal()
+    auth = jwt_auth(db, settings)
+
+    client = jwt_client(auth)
+    assert client is not None
+
+    service_account = client.user().get()
+    assert service_account is not None
+
+    # force the token to expire
+    db_jwt = get_jwt(db, settings.JWT_PUBLIC_KEY_ID, settings.FERNET_KEY)
+    db_jwt.expires_on = db_jwt.expires_on - timedelta(hours=24)
+    crud.save_jwt(db, db_jwt, settings.FERNET_KEY)
+
+    # should be able to reuse the auth token
+    client = jwt_check_client(db, settings)
+    assert client is not None
+
+    service_account = client.user().get()
+    assert service_account is not None

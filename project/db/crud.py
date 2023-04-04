@@ -13,12 +13,12 @@ def get_jwt(db: Session, box_app_id: str, fernet_key: str) -> schemas.Jwt:
     if db_jwt is None:
         return None
 
-    jwt = jwt_db_to_jwt(db_jwt, fernet_key,False,False)
+    jwt = jwt_db_to_jwt(db_jwt, fernet_key, False, False)
 
     return jwt
 
 
-def save_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str):
+def save_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str) -> schemas.Jwt:
     """Save a JWT to the database (create or update)"""
     db_jwt = get_jwt(db, jwt.box_app_id, fernet_key)
 
@@ -28,7 +28,7 @@ def save_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str):
     return update_jwt(db, jwt, fernet_key)
 
 
-def create_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str):
+def create_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str) -> schemas.Jwt:
     """Create a JWT in the database"""
 
     db_jwt = models.Jwt()
@@ -41,27 +41,32 @@ def create_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str):
     db.add(db_jwt)
     db.commit()
     db.refresh(db_jwt)
-    return db_jwt
+    return jwt_db_to_jwt(db_jwt, fernet_key, False, False)
 
 
 def update_jwt(db: Session, jwt: schemas.JwtCreate, fernet_key: str):
     """Update a JWT in the database"""
-    db_jwt = get_jwt(db, jwt.box_app_id, fernet_key)
+    db_jwt = (
+        db.query(models.Jwt).filter(models.Jwt.box_app_id == jwt.box_app_id).first()
+    )
 
     if db_jwt is None:
         raise ValueError("JWT not found")
 
-    db_jwt.box_app_id = jwt.box_app_id
+    # update the record
     db_jwt.access_token_encrypted = encrypt_token(jwt.access_token_clear, fernet_key)
     db_jwt.expires_on = jwt.expires_on
-    db_jwt.app_user_id = jwt.app_user_id
 
+    # update the record on the database
     db.commit()
     db.refresh(db_jwt)
-    return db_jwt
+
+    return jwt_db_to_jwt(db_jwt, fernet_key, False, False)
 
 
-def list_jwts(db: Session, fernet_key: str, skip: int = 0, limit: int = 100) -> list[schemas.Jwt]:
+def list_jwts(
+    db: Session, fernet_key: str, skip: int = 0, limit: int = 100
+) -> list[schemas.Jwt]:
     """List all the JWTs in the database"""
     jwts_model = db.query(models.Jwt).offset(skip).limit(limit).all()
     jwts_resutl = []
