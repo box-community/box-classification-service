@@ -98,14 +98,10 @@ async def classify(
     body_json = await request.json()
 
     # check if the webhook id is the expected one
-    # created on the console
     webhook_id = body_json["webhook"]["id"]
 
-    if webhook_id != settings.WH_ID and False:
+    if webhook_id != settings.WH_ID:
         raise HTTPException(status_code=404, detail="Unexpected webhook id")
-
-    # should also check for replay attacks
-    # TBD
 
     body = await request.body()
 
