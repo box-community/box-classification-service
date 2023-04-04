@@ -13,6 +13,13 @@ from app import box_webhooks
 from db.database import create_db_engine
 from db import models, schemas, crud
 
+from logging.config import dictConfig
+import logging
+from .config import LogConfig
+
+dictConfig(LogConfig().dict())
+logger = logging.getLogger("Classification Service")
+
 
 @lru_cache()
 def get_settings():
@@ -53,10 +60,15 @@ async def info(request: Request):
 
 
 @app.get("/box/info/jwt", response_model=list[schemas.Jwt])
-def info_jwt(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), settings: config.Settings = Depends(get_settings)):
+def info_jwt(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    settings: config.Settings = Depends(get_settings),
+):
     """list all jwt accounts in current database"""
 
-    jwts = crud.list_jwts(db, settings.FERNET_KEY,skip=skip, limit=limit)
+    jwts = crud.list_jwts(db, settings.FERNET_KEY, skip=skip, limit=limit)
     return jwts
 
 
