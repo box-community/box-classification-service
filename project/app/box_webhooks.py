@@ -53,11 +53,10 @@ def classify_file(file_id: str, db: Session, settings: Settings):
     if file_class is None or file_class != classification:
         try:
             file_class = file.set_classification(classification)
+            logger.info("File '%s' classified as '%s'", file.name, file_class)
         except BoxAPIException:
             logger.warning(
                 "Unable to set classification %s for file %s",
                 classification,
                 file.name,
             )
-
-    logger.info("File '%s' classified as '%s'", file.name, file_class)
